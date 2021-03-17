@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-collection-server 
+spec:
+  selector:
+    # This app must match the label of the pods.
+    app: server-data-collection
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: server
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+      name: socket
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-data-collection
+spec:
+  selector:
+    matchLabels:
+      # This is the label the app selector has to match.
+      app: server-data-collection
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: server-data-collection
+    spec:
+      imagePullSecrets:
+        - name: sdugitlab
+      containers:
+      - name: server-data-collection
+        image: gitlab.sdu.dk:5050/semester-project-e2020/team-05-data-collection/template:deployment # Change depending on branch, I'm pretty sure
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        - containerPort: 8081
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "100Mi"
+          limits:
+            cpu: "100m"
+            memory: "100Mi"
+---        
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-collection-database 
+spec:
+  selector:
+    # This app must match the label of the pods.
+    app: database-data-collection
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-data-collection
+spec:
+  selector:
+    matchLabels:
+      # This is the label the app selector has to match.
+      app: database-data-collection
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: database-data-collection
+    spec:
+      containers:
+      - name: mysql
+        image: mysql
+        imagePullPolicy: IfNotPresent
+        args: ["--default-authentication-plugin=mysql_native_password"]
+        env: 
+          - name: MYSQL_ALLOW_EMPTY_PASSWORD
+            value: "yes"
+        ports:
+          - containerPort: 3306
+        resources:
+          limits:
+            cpu: 300m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 150Mi
+        volumeMounts:
+          - name: mysql-initdb
+            mountPath: /docker-entrypoint-initdb.d
+          - name: mysql-data
+            mountPath: /var/lib/mysql  
+      volumes:
+        - name: mysql-initdb
+          configMap:
+            name: mysql-init-config
+        - name: mysql-data    # new volume for db persistance
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim
+--- # pvc for db persistance
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata: 
+  name: mysql-pv-claim
+  labels:
+    app: database-data-collection
+spec: 
+  accessModes: 
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-config
+data:
+  init.sql: |
+    CREATE DATABASE team05;
+
+    USE team05;
+    
+    CREATE TABLE IF NOT EXISTS user (
+        user_id VARCHAR(50) PRIMARY KEY
+    );
+    
+    CREATE TABLE IF NOT EXISTS song (
+        song_id VARCHAR(50) PRIMARY KEY
+    );
+    
+    CREATE TABLE IF NOT EXISTS history (
+        user_id VARCHAR(50) NOT NULL REFERENCES user.user_id,
+        song_id VARCHAR(50) NOT NULL REFERENCES song.song_id,
+        timestamp BIGINT NOT NULL,
+        PRIMARY KEY(user_id, song_id)
+    );
+    
+    CREATE TABLE IF NOT EXISTS history_weekly (
+        user_id VARCHAR(50) NOT NULL REFERENCES user.user_id,
+        song_id VARCHAR(50) NOT NULL REFERENCES song.song_id,
+        playcount INTEGER NOT NULL,
+        timestamp DATE NOT NULL,
+        PRIMARY KEY(user_id, song_id)
+    );
+    
+    CREATE TABLE IF NOT EXISTS history_yearly (
+        user_id VARCHAR(50) NOT NULL REFERENCES user.user_id,
+        song_id VARCHAR(50) NOT NULL REFERENCES song.song_id,
+        playcount INTEGER NOT NULL,
+        timestamp DATE NOT NULL,
+        PRIMARY KEY(user_id, song_id)
+    );
+    
+    CREATE TABLE IF NOT EXISTS daily_activity (
+        timestamp DATETIME PRIMARY KEY,
+        total_users INTEGER NOT NULL,
+        total_subscribers INTEGER NOT NULL,
+        logins INTEGER NOT NULL,
+        minutes_played INTEGER NOT NULL
+    );
+  
+  
+
+  

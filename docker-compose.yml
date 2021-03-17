@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  db_container:
+    build: 
+      context: ./database 
+      dockerfile: ./Dockerfile_Database
+    command: --default-authentication-plugin=mysql_native_password
+    image: gitlab.sdu.dk:5050/semester-project-e2020/team-05-data-collection/template:database-latest
+    container_name: db_container
+    restart: always
+    ports:
+    - "3306:3306"
+  server:
+    build: 
+      context: ./server
+      dockerfile: ./Dockerfile_Server
+    image: gitlab.sdu.dk:5050/semester-project-e2020/team-05-data-collection/template:server-latest
+    ports:
+    - "8081:8080"
+  event_server:
+    build: 
+      context: ./eventPublisher
+      dockerfile: ./Dockerfile_EventPublisher
+  recommendation:
+    build:
+      context: ./recommendation
+      dockerfile: ./Dockerfile_Recommendation
+    depends_on: 
+      - db_container

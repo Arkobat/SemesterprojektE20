@@ -1,0 +1,47 @@
+{
+  "songStartEvent": {
+    "properties": {
+      "userId": {"type": "string", "minLength": 1},
+      "songId": {"type": "string", "minLength": 1},
+      "playlistId": {"type": "string", "minLength": 1},
+      "timestamp": {"type": "number"}
+    },
+    "required": ["userId", "songId", "playlistId", "timestamp"]
+  },
+  "songPauseEvent": {
+    "properties": {
+      "userId": {"type": "string", "minLength": 1},
+      "songId": {"type": "string", "minLength": 1},
+      "playlistId": {"type": "string", "minLength": 1},
+      "progress": {"type": "number"},
+      "timestamp": {"type": "number"}
+    },
+    "required": ["userId", "songId", "playlistId","progress", "timestamp"]
+  },
+  "songResumeEvent": {"$ref": "#/songPauseEvent"},
+  "songEndEvent": {"$ref": "#/songStartEvent"},
+  "songChangeEvent": {
+    "properties": {
+      "userId": {"type": "string", "minLength": 1},
+      "previousSongId": {"type": "string", "minLength": 1},
+      "newSongId": {"type": "string", "minLength": 1},
+      "playlistId": {"type": "string", "minLength": 1},
+      "progress": {"type": "number"},
+      "timestamp": {"type": "number"}
+    },
+    "required": ["userId", "previousSongId","newSongId", "playlistId", "progress", "timestamp"]
+  },
+  "songWindEvent": {
+    "properties": {
+      "userId": {"type": "string", "minLength": 1},
+      "songId": {"type": "string", "minLength": 1},
+      "playlistId": {"type": "string", "minLength": 1},
+      "previousProgress": {"type": "number"},
+      "nextProgress": {"type": "number"},
+      "timestamp": {"type": "number"}
+    },
+    "required": ["userId", "songId", "playlistId", "previousProgress", "nextProgress", "timestamp"]
+  },
+  "songQueueAddEvent": {"$ref": "#/songStartEvent"},
+  "songQueueRemoveEvent": {"$ref": "#/songStartEvent"}
+}

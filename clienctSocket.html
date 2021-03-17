@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <style>
+        body {
+            background-color: #eeeeee;
+        }
+
+        textarea {
+            width: 75%;
+            height: 75%;
+            min-height: 300px;
+        }
+
+        select {
+            margin: 5px;
+        }
+    </style>
+
+</head>
+<h1>DEMO SIDE</h1>
+<body>
+    Channel: <select id="channel">
+        <option value="songStartEvent">Song Started</option>
+        <option value="songPauseEvent">Song Paused</option>
+        <option value="songResumeEvent">Song Resumed</option>
+        <option value="songEndEvent">Song Ended</option>
+        <option value="songChangeEvent">Song Changed</option>
+        <option value="songWindEvent">Song Wind</option>
+        <option value="songQueueAddEvent">Song Queue Add</option>
+        <option value="songQueueRemoveEvent">Song Queue Remove</option>
+
+    </select><br />
+    Message: <br /><textarea id="message" "></textarea>
+    <br />
+
+    <button id="button">Send</button>
+
+    Code: <input type="text" id="code" value="0" readonly>
+    Message: <input type="text" id="response" value="0" readonly>
+
+    <hr>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <script>
+
+        var socket = io("http://localhost:8080");
+
+        socket.on('connect', function () {
+            console.log("connected to socket server")
+        });
+        socket.on('disconnect', function () {
+            console.log("disconnected from socket server")
+        });
+
+        let channel = document.getElementById("channel");
+        let message = document.getElementById("message");
+        let button = document.getElementById("button");
+		let code = document.getElementById("code");
+        let response = document.getElementById("response");
+
+        button.addEventListener("click", () => {
+            if (message.value.length === 0) {
+                code.value = 401
+				response.value = 'Bad request'
+                return
+            }
+            response.value = ''
+            
+            socket.emit(channel.value, message.value, (callback) => {
+                message.value = ''
+				code.value = callback.status
+                response.value = callback.message
+            });
+        });
+
+    </script>
+</body>
+
+</html>
